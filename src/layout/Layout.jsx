@@ -1,97 +1,53 @@
-import React from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import {
-  Box,
-  Drawer,
-  AppBar,
-  Toolbar,
-  List,
-  Typography,
-  Divider,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Container,
-} from '@mui/material';
-import {
-  Dashboard as DashboardIcon,
-  Add as AddIcon,
-  Rule as RuleIcon,
-} from '@mui/icons-material';
-
-const drawerWidth = 240;
-
-const menuItems = [
-  { text: 'Transactions', icon: <DashboardIcon />, path: '/dashboard' },
-  { text: 'Submit Transaction', icon: <AddIcon />, path: '/submit' },
-  { text: 'Risk Rules', icon: <RuleIcon />, path: '/rules' },
-];
+import React, { useState } from "react";
+import { Outlet } from "react-router-dom";
+import { Box } from "@mui/material";
+import Header from "./Header";
+import Sidebar from "./Sidebar";
 
 const Layout = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [desktopOpen, setDesktopOpen] = useState(true);
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
+  const handleDesktopDrawerToggle = () => {
+    setDesktopOpen(!desktopOpen);
+  };
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
-        }}
-      >
-        <Toolbar>
-          <Typography variant="h6" noWrap component="div">
-            Transaction Risk Scoring System
-          </Typography>
-        </Toolbar>
-      </AppBar>
-
-      <Drawer
-        variant="permanent"
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: drawerWidth,
-            boxSizing: 'border-box',
-          },
-        }}
-      >
-        <Toolbar>
-          <Typography variant="h6" fontWeight={700}>
-            TRSS
-          </Typography>
-        </Toolbar>
-        <Divider />
-        <List>
-          {menuItems.map((item) => (
-            <ListItem key={item.text} disablePadding>
-              <ListItemButton
-                selected={location.pathname === item.path}
-                onClick={() => navigate(item.path)}
-              >
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-      </Drawer>
+    <Box sx={{ display: "flex" }}>
+      <Header
+        mobileOpen={mobileOpen}
+        handleDrawerToggle={handleDrawerToggle}
+        desktopOpen={desktopOpen}
+        handleDesktopDrawerToggle={handleDesktopDrawerToggle}
+      />
+      <Sidebar
+        mobileOpen={mobileOpen}
+        handleDrawerToggle={handleDrawerToggle}
+        desktopOpen={desktopOpen}
+        handleDesktopDrawerToggle={handleDesktopDrawerToggle}
+      />
 
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          width: {
+            xs: '100%',
+            sm: desktopOpen ? `calc(100% - 240px)` : '100%'
+          },
+          ml: { sm: desktopOpen ? '240px' : 0 },
           mt: 8,
+          transition: 'all 0.3s ease-in-out',
+          height: 'calc(100vh - 64px)',
+            overflow: 'auto',
         }}
       >
-        <Container maxWidth="xl">
-          <Outlet />
-        </Container>
+        <Outlet />
       </Box>
     </Box>
   );
