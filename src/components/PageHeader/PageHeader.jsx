@@ -1,0 +1,30 @@
+import React from 'react';
+import { Typography, Box, Stack, Divider } from '@mui/material';
+
+const PageHeader = ({ title, actions, subtitle }) => {
+  return (
+    <Box mb={3}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        spacing={2}
+      >
+        <Box>
+          <Typography variant="h4" fontWeight={700} gutterBottom>
+            {title}
+          </Typography>
+          {subtitle && (
+            <Typography variant="body2" color="text.secondary">
+              {subtitle}
+            </Typography>
+          )}
+        </Box>
+        {actions && <Box>{actions}</Box>}
+      </Stack>
+      <Divider sx={{ mt: 2 }} />
+    </Box>
+  );
+};
+
+export default PageHeader;
