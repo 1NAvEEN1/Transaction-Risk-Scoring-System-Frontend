@@ -28,11 +28,12 @@ const RuleTypeFields = ({ ruleType, formData, errors, onChange }) => {
           helperText={errors.amountThreshold || 'Minimum amount to trigger this rule'}
           required
           inputProps={{ step: '0.01', min: '0' }}
+          size="small"
         />
       )}
 
       {ruleType === 'MERCHANT_CATEGORY' && (
-        <FormControl fullWidth error={!!errors.merchantCategory} required>
+        <FormControl fullWidth error={!!errors.merchantCategory} required size="small">
           <InputLabel>Merchant Category</InputLabel>
           <Select
             name="merchantCategory"
@@ -65,6 +66,7 @@ const RuleTypeFields = ({ ruleType, formData, errors, onChange }) => {
             required
             inputProps={{ min: '1' }}
             sx={{ mb: 2 }}
+            size="small"
           />
           <TextField
             fullWidth
@@ -77,6 +79,7 @@ const RuleTypeFields = ({ ruleType, formData, errors, onChange }) => {
             helperText={errors.frequencyWindowMinutes || 'Time window in minutes'}
             required
             inputProps={{ min: '1' }}
+            size="small"
           />
         </>
       )}

@@ -10,12 +10,15 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  IconButton,
   useTheme,
 } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
   Add as AddIcon,
   Rule as RuleIcon,
+  Menu as MenuIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 
 const drawerWidth = 240;
@@ -30,6 +33,7 @@ const Sidebar = ({
   mobileOpen,
   handleDrawerToggle,
   desktopOpen,
+  handleDesktopDrawerToggle,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,10 +48,21 @@ const Sidebar = ({
 
   const drawer = (
     <>
-      <Toolbar sx={{ backgroundColor: "primary.lighter" }}>
+      <Toolbar
+        sx={{
+          backgroundColor: "primary.lighter",
+          justifyContent: "space-between",
+        }}
+      >
         <Typography variant="h6" fontWeight={700} color="primary.darker">
           TRSS
         </Typography>
+        <IconButton
+          onClick={handleDesktopDrawerToggle}
+          sx={{ display: { xs: "none", sm: "block" }, mt: 0.5, mr: -2 }}
+        >
+          <MenuIcon />
+        </IconButton>
       </Toolbar>
       <Divider />
       <List

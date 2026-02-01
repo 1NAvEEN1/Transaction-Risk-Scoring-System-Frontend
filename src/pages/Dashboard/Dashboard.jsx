@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Select,
@@ -13,6 +12,7 @@ import PageHeader from '../../components/PageHeader/PageHeader';
 import StatusChip from '../../components/StatusChip/StatusChip';
 import ErrorAlert from '../../components/ErrorAlert/ErrorAlert';
 import DataGridTable from '../../components/DataGridTable/DataGridTable';
+import TransactionDetailsDialog from '../TransactionDetails/TransactionDetailsDialog';
 import {
   fetchTransactions,
   setStatusFilter,
@@ -22,7 +22,6 @@ import {
 
 const Dashboard = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const {
     list,
     page,
@@ -33,6 +32,9 @@ const Dashboard = () => {
     error,
   } = useSelector((state) => state.transactions);
 
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedTransactionId, setSelectedTransactionId] = useState(null);
+
   useEffect(() => {
     dispatch(fetchTransactions({ page, size, status: statusFilter }));
   }, [dispatch, page, size, statusFilter]);
@@ -41,16 +43,14 @@ const Dashboard = () => {
     dispatch(setStatusFilter(event.target.value));
   };
 
-  const handleChangePage = (event, newPage) => {
-    dispatch(setPage(newPage));
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    dispatch(setSize(parseInt(event.target.value, 10)));
-  };
-
   const handleRowClick = (id) => {
-    navigate(`/transaction/${id}`);
+    setSelectedTransactionId(id);
+    setDetailsOpen(true);
+  };
+
+  const handleCloseDetails = () => {
+    setDetailsOpen(false);
+    setSelectedTransactionId(null);
   };
 
   const formatAmount = (amount, currency) => {
@@ -204,6 +204,12 @@ const Dashboard = () => {
             height:"calc(100vh - 230px)"
           },
         }}
+      />
+
+      <TransactionDetailsDialog
+        open={detailsOpen}
+        transactionId={selectedTransactionId}
+        onClose={handleCloseDetails}
       />
     </Box>
   );

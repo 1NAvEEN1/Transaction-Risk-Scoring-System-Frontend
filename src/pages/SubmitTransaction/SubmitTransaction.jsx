@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import {
   Box,
-  Paper,
   Grid,
   TextField,
   Button,
@@ -17,8 +18,41 @@ import {
 } from '@mui/material';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import ErrorAlert from '../../components/ErrorAlert/ErrorAlert';
-import { submitTransaction, clearSubmitError } from '../../reducers/transactionsSlice';
+import { submitTransaction, clearSubmitError, clearSelectedTransaction } from '../../reducers/transactionsSlice';
 import { fetchCustomers } from '../../reducers/customersSlice';
+
+// Helper function to get local datetime string for datetime-local input
+const getLocalDateTimeString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+// Validation schema
+const validationSchema = Yup.object({
+  customerId: Yup.number()
+    .required('Customer is required')
+    .positive('Please select a valid customer'),
+  amount: Yup.number()
+    .required('Amount is required')
+    .positive('Amount must be greater than 0')
+    .test('is-decimal', 'Amount must be a valid number', (value) => 
+      value ? /^\d+(\.\d{1,2})?$/.test(value.toString()) : true
+    ),
+  currency: Yup.string()
+    .required('Currency is required')
+    .oneOf(['USD', 'EUR', 'GBP', 'LKR'], 'Invalid currency'),
+  timestamp: Yup.date()
+    .required('Timestamp is required')
+    .max(getLocalDateTimeString(), 'Timestamp cannot be in the future'),
+  merchantCategory: Yup.string()
+    .required('Merchant category is required')
+    .oneOf(['RETAIL', 'GAMBLING', 'CRYPTO', 'OTHER'], 'Invalid merchant category'),
+});
 
 const SubmitTransaction = () => {
   const dispatch = useDispatch();
@@ -26,102 +60,60 @@ const SubmitTransaction = () => {
   const { submitLoading, submitError, selectedTransaction } = useSelector(
     (state) => state.transactions
   );
-  const { list: customers, loading: customersLoading } = useSelector(
+  const { list: customers = [], loading: customersLoading } = useSelector(
     (state) => state.customers
   );
 
-  const [formData, setFormData] = useState({
-    customerId: '',
-    amount: '',
-    currency: 'USD',
-    timestamp: new Date().toISOString().slice(0, 16),
-    merchantCategory: '',
-  });
-
-  const [errors, setErrors] = useState({});
   const [showSuccess, setShowSuccess] = useState(false);
+  const hasNavigated = useRef(false);
+
+  const formik = useFormik({
+    initialValues: {
+      customerId: '',
+      amount: '',
+      currency: 'USD',
+      timestamp: getLocalDateTimeString(),
+      merchantCategory: '',
+    },
+    validationSchema: validationSchema,
+    onSubmit: (values) => {
+      hasNavigated.current = false;
+      const input = {
+        customerId: parseInt(values.customerId),
+        amount: parseFloat(values.amount),
+        currency: values.currency,
+        timestamp: new Date(values.timestamp).toISOString(),
+        merchantCategory: values.merchantCategory,
+      };
+      dispatch(submitTransaction(input));
+    },
+  });
 
   useEffect(() => {
     dispatch(fetchCustomers());
   }, [dispatch]);
 
   useEffect(() => {
-    if (selectedTransaction && !submitLoading && !submitError) {
+    if (selectedTransaction && !submitLoading && !submitError && !hasNavigated.current) {
+      hasNavigated.current = true;
       setShowSuccess(true);
       setTimeout(() => {
-        navigate(`/transaction/${selectedTransaction.id}`);
+        navigate(`/dashboard`);
+        dispatch(clearSelectedTransaction());
       }, 1500);
     }
-  }, [selectedTransaction, submitLoading, submitError, navigate]);
+  }, [selectedTransaction, submitLoading, submitError, navigate, dispatch]);
 
-  const handleChange = (field) => (event) => {
-    setFormData({
-      ...formData,
-      [field]: event.target.value,
-    });
-    // Clear error for this field
-    if (errors[field]) {
-      setErrors({
-        ...errors,
-        [field]: '',
-      });
-    }
-  };
-
-  const validate = () => {
-    const newErrors = {};
-
-    if (!formData.customerId) {
-      newErrors.customerId = 'Customer is required';
-    }
-
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      newErrors.amount = 'Amount must be greater than 0';
-    }
-
-    if (!formData.currency) {
-      newErrors.currency = 'Currency is required';
-    }
-
-    if (!formData.timestamp) {
-      newErrors.timestamp = 'Timestamp is required';
-    }
-
-    if (!formData.merchantCategory) {
-      newErrors.merchantCategory = 'Merchant category is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    
-    if (!validate()) {
-      return;
-    }
-
-    const input = {
-      customerId: parseInt(formData.customerId),
-      amount: parseFloat(formData.amount),
-      currency: formData.currency,
-      timestamp: new Date(formData.timestamp).toISOString(),
-      merchantCategory: formData.merchantCategory,
+  // Clear selected transaction when component unmounts
+  useEffect(() => {
+    return () => {
+      dispatch(clearSelectedTransaction());
     };
-
-    dispatch(submitTransaction(input));
-  };
+  }, [dispatch]);
 
   const handleReset = () => {
-    setFormData({
-      customerId: '',
-      amount: '',
-      currency: 'USD',
-      timestamp: new Date().toISOString().slice(0, 16),
-      merchantCategory: '',
-    });
-    setErrors({});
+    formik.resetForm();
+    formik.setFieldValue('timestamp', getLocalDateTimeString());
     dispatch(clearSubmitError());
   };
 
@@ -136,17 +128,31 @@ const SubmitTransaction = () => {
         <ErrorAlert error={submitError} onClose={() => dispatch(clearSubmitError())} />
       )}
 
-      <Paper elevation={2} sx={{ p: 3 }}>
-        <form onSubmit={handleSubmit}>
+      <Box
+        sx={{
+          border: "1px solid #e0e0e0",
+          borderRadius: 1,
+          p: 3,
+        }}
+      >
+        <form onSubmit={formik.handleSubmit}>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth error={!!errors.customerId} required>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <FormControl 
+                fullWidth 
+                error={formik.touched.customerId && Boolean(formik.errors.customerId)} 
+                required 
+                size="small"
+              >
                 <InputLabel>Customer</InputLabel>
                 <Select
-                  value={formData.customerId}
-                  onChange={handleChange('customerId')}
+                  name="customerId"
+                  value={formik.values.customerId}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   label="Customer"
                   disabled={customersLoading}
+                  size="small"
                 >
                   {customers.map((customer) => (
                     <MenuItem key={customer.id} value={customer.id}>
@@ -155,32 +161,49 @@ const SubmitTransaction = () => {
                   ))}
                 </Select>
                 <FormHelperText>
-                  {errors.customerId || 'Select the customer making the transaction'}
+                  {formik.touched.customerId && formik.errors.customerId 
+                    ? formik.errors.customerId 
+                    : 'Select the customer making the transaction'}
                 </FormHelperText>
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
+                name="amount"
                 label="Amount"
                 type="number"
-                value={formData.amount}
-                onChange={handleChange('amount')}
-                error={!!errors.amount}
-                helperText={errors.amount || 'Enter transaction amount'}
+                value={formik.values.amount}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.amount && Boolean(formik.errors.amount)}
+                helperText={
+                  formik.touched.amount && formik.errors.amount 
+                    ? formik.errors.amount 
+                    : 'Enter transaction amount'
+                }
                 required
                 inputProps={{ step: '0.01', min: '0.01' }}
+                size="small"
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth error={!!errors.currency} required>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <FormControl 
+                fullWidth 
+                error={formik.touched.currency && Boolean(formik.errors.currency)} 
+                required 
+                size="small"
+              >
                 <InputLabel>Currency</InputLabel>
                 <Select
-                  value={formData.currency}
-                  onChange={handleChange('currency')}
+                  name="currency"
+                  value={formik.values.currency}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   label="Currency"
+                  size="small"
                 >
                   <MenuItem value="USD">USD</MenuItem>
                   <MenuItem value="EUR">EUR</MenuItem>
@@ -188,34 +211,51 @@ const SubmitTransaction = () => {
                   <MenuItem value="LKR">LKR</MenuItem>
                 </Select>
                 <FormHelperText>
-                  {errors.currency || 'Select transaction currency'}
+                  {formik.touched.currency && formik.errors.currency 
+                    ? formik.errors.currency 
+                    : 'Select transaction currency'}
                 </FormHelperText>
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
+                name="timestamp"
                 label="Timestamp"
                 type="datetime-local"
-                value={formData.timestamp}
-                onChange={handleChange('timestamp')}
-                error={!!errors.timestamp}
-                helperText={errors.timestamp || 'Select transaction date and time'}
+                value={formik.values.timestamp}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.timestamp && Boolean(formik.errors.timestamp)}
+                helperText={
+                  formik.touched.timestamp && formik.errors.timestamp 
+                    ? formik.errors.timestamp 
+                    : 'Select transaction date and time'
+                }
                 required
                 InputLabelProps={{
                   shrink: true,
                 }}
+                size="small"
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth error={!!errors.merchantCategory} required>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <FormControl 
+                fullWidth 
+                error={formik.touched.merchantCategory && Boolean(formik.errors.merchantCategory)} 
+                required 
+                size="small"
+              >
                 <InputLabel>Merchant Category</InputLabel>
                 <Select
-                  value={formData.merchantCategory}
-                  onChange={handleChange('merchantCategory')}
+                  name="merchantCategory"
+                  value={formik.values.merchantCategory}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
                   label="Merchant Category"
+                  size="small"
                 >
                   <MenuItem value="RETAIL">Retail</MenuItem>
                   <MenuItem value="GAMBLING">Gambling</MenuItem>
@@ -223,13 +263,15 @@ const SubmitTransaction = () => {
                   <MenuItem value="OTHER">Other</MenuItem>
                 </Select>
                 <FormHelperText>
-                  {errors.merchantCategory || 'Select merchant category'}
+                  {formik.touched.merchantCategory && formik.errors.merchantCategory 
+                    ? formik.errors.merchantCategory 
+                    : 'Select merchant category'}
                 </FormHelperText>
               </FormControl>
             </Grid>
 
-            <Grid item xs={12}>
-              <Box display="flex" gap={2} justifyContent="flex-end">
+            <Grid size={{ xs: 12 }}>
+              <Box display="flex" gap={2} justifyContent="space-between" mt={0}>
                 <Button
                   variant="outlined"
                   onClick={handleReset}
@@ -248,7 +290,7 @@ const SubmitTransaction = () => {
             </Grid>
           </Grid>
         </form>
-      </Paper>
+      </Box>
 
       <Snackbar
         open={showSuccess}

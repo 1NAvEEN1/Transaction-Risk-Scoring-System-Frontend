@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 import {
   Dialog,
   DialogTitle,
@@ -16,14 +18,65 @@ import {
   Switch,
   FormControlLabel,
   Box,
-} from '@mui/material';
-import RuleTypeFields from '../../components/RuleTypeFields/RuleTypeFields';
-import ErrorAlert from '../../components/ErrorAlert/ErrorAlert';
+  Divider,
+} from "@mui/material";
+import RuleTypeFields from "../../components/RuleTypeFields/RuleTypeFields";
+import ErrorAlert from "../../components/ErrorAlert/ErrorAlert";
 import {
   createRule,
   updateRule,
   clearFormError,
-} from '../../reducers/rulesSlice';
+} from "../../reducers/rulesSlice";
+
+// Validation schema
+const validationSchema = Yup.object({
+  ruleName: Yup.string()
+    .trim()
+    .required("Rule name is required")
+    .min(1, "Rule name cannot be empty"),
+  ruleType: Yup.string()
+    .required("Rule type is required")
+    .oneOf(
+      ["AMOUNT_THRESHOLD", "MERCHANT_CATEGORY", "FREQUENCY"],
+      "Invalid rule type",
+    ),
+  riskPoints: Yup.number()
+    .required("Risk points is required")
+    .positive("Risk points must be greater than 0")
+    .integer("Risk points must be a whole number"),
+  amountThreshold: Yup.number().when("ruleType", {
+    is: "AMOUNT_THRESHOLD",
+    then: (schema) =>
+      schema
+        .required("Amount threshold is required")
+        .positive("Amount threshold must be greater than 0"),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  merchantCategory: Yup.string().when("ruleType", {
+    is: "MERCHANT_CATEGORY",
+    then: (schema) => schema.required("Merchant category is required"),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  frequencyCount: Yup.number().when("ruleType", {
+    is: "FREQUENCY",
+    then: (schema) =>
+      schema
+        .required("Frequency count is required")
+        .positive("Frequency count must be greater than 0")
+        .integer("Frequency count must be a whole number"),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  frequencyWindowMinutes: Yup.number().when("ruleType", {
+    is: "FREQUENCY",
+    then: (schema) =>
+      schema
+        .required("Time window is required")
+        .positive("Time window must be greater than 0")
+        .integer("Time window must be a whole number"),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  active: Yup.boolean(),
+});
 
 const RuleFormModal = ({ open, onClose, rule }) => {
   const dispatch = useDispatch();
@@ -31,149 +84,70 @@ const RuleFormModal = ({ open, onClose, rule }) => {
 
   const isEditMode = !!rule;
 
-  const [formData, setFormData] = useState({
-    ruleName: '',
-    ruleType: '',
-    amountThreshold: '',
-    merchantCategory: '',
-    frequencyCount: '',
-    frequencyWindowMinutes: '',
-    riskPoints: '',
-    active: true,
-  });
+  const formik = useFormik({
+    initialValues: {
+      ruleName: "",
+      ruleType: "",
+      amountThreshold: "",
+      merchantCategory: "",
+      frequencyCount: "",
+      frequencyWindowMinutes: "",
+      riskPoints: "",
+      active: true,
+    },
+    validationSchema: validationSchema,
+    onSubmit: async (values) => {
+      const input = {
+        ruleName: values.ruleName.trim(),
+        ruleType: values.ruleType,
+        riskPoints: parseInt(values.riskPoints),
+        active: values.active,
+      };
 
-  const [errors, setErrors] = useState({});
+      // Add rule type specific fields
+      if (values.ruleType === "AMOUNT_THRESHOLD") {
+        input.amountThreshold = parseFloat(values.amountThreshold);
+      } else if (values.ruleType === "MERCHANT_CATEGORY") {
+        input.merchantCategory = values.merchantCategory;
+      } else if (values.ruleType === "FREQUENCY") {
+        input.frequencyCount = parseInt(values.frequencyCount);
+        input.frequencyWindowMinutes = parseInt(values.frequencyWindowMinutes);
+      }
+
+      try {
+        if (isEditMode) {
+          await dispatch(updateRule({ id: rule.id, input })).unwrap();
+        } else {
+          await dispatch(createRule(input)).unwrap();
+        }
+        onClose();
+      } catch (error) {
+        // Error is handled by Redux state
+      }
+    },
+  });
 
   useEffect(() => {
     if (rule) {
-      setFormData({
-        ruleName: rule.ruleName || '',
-        ruleType: rule.ruleType || '',
-        amountThreshold: rule.amountThreshold || '',
-        merchantCategory: rule.merchantCategory || '',
-        frequencyCount: rule.frequencyCount || '',
-        frequencyWindowMinutes: rule.frequencyWindowMinutes || '',
-        riskPoints: rule.riskPoints || '',
+      formik.setValues({
+        ruleName: rule.ruleName || "",
+        ruleType: rule.ruleType || "",
+        amountThreshold: rule.amountThreshold || "",
+        merchantCategory: rule.merchantCategory || "",
+        frequencyCount: rule.frequencyCount || "",
+        frequencyWindowMinutes: rule.frequencyWindowMinutes || "",
+        riskPoints: rule.riskPoints || "",
         active: rule.active ?? true,
       });
     } else {
-      setFormData({
-        ruleName: '',
-        ruleType: '',
-        amountThreshold: '',
-        merchantCategory: '',
-        frequencyCount: '',
-        frequencyWindowMinutes: '',
-        riskPoints: '',
-        active: true,
-      });
+      formik.resetForm();
     }
-    setErrors({});
     dispatch(clearFormError());
   }, [rule, open, dispatch]);
 
-  const handleChange = (field) => (event) => {
-    const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
-    setFormData({
-      ...formData,
-      [field]: value,
-    });
-    if (errors[field]) {
-      setErrors({
-        ...errors,
-        [field]: '',
-      });
-    }
-  };
-
   const handleRuleTypeFieldChange = (field, value) => {
-    setFormData({
-      ...formData,
-      [field]: value,
-    });
-    if (errors[field]) {
-      setErrors({
-        ...errors,
-        [field]: '',
-      });
-    }
-  };
-
-  const validate = () => {
-    const newErrors = {};
-
-    if (!formData.ruleName.trim()) {
-      newErrors.ruleName = 'Rule name is required';
-    }
-
-    if (!formData.ruleType) {
-      newErrors.ruleType = 'Rule type is required';
-    }
-
-    if (!formData.riskPoints || parseInt(formData.riskPoints) <= 0) {
-      newErrors.riskPoints = 'Risk points must be greater than 0';
-    }
-
-    // Rule type specific validation
-    if (formData.ruleType === 'AMOUNT_THRESHOLD') {
-      if (!formData.amountThreshold || parseFloat(formData.amountThreshold) <= 0) {
-        newErrors.amountThreshold = 'Amount threshold must be greater than 0';
-      }
-    }
-
-    if (formData.ruleType === 'MERCHANT_CATEGORY') {
-      if (!formData.merchantCategory) {
-        newErrors.merchantCategory = 'Merchant category is required';
-      }
-    }
-
-    if (formData.ruleType === 'FREQUENCY') {
-      if (!formData.frequencyCount || parseInt(formData.frequencyCount) <= 0) {
-        newErrors.frequencyCount = 'Frequency count must be greater than 0';
-      }
-      if (!formData.frequencyWindowMinutes || parseInt(formData.frequencyWindowMinutes) <= 0) {
-        newErrors.frequencyWindowMinutes = 'Time window must be greater than 0';
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    if (!validate()) {
-      return;
-    }
-
-    const input = {
-      ruleName: formData.ruleName.trim(),
-      ruleType: formData.ruleType,
-      riskPoints: parseInt(formData.riskPoints),
-      active: formData.active,
-    };
-
-    // Add rule type specific fields
-    if (formData.ruleType === 'AMOUNT_THRESHOLD') {
-      input.amountThreshold = parseFloat(formData.amountThreshold);
-    } else if (formData.ruleType === 'MERCHANT_CATEGORY') {
-      input.merchantCategory = formData.merchantCategory;
-    } else if (formData.ruleType === 'FREQUENCY') {
-      input.frequencyCount = parseInt(formData.frequencyCount);
-      input.frequencyWindowMinutes = parseInt(formData.frequencyWindowMinutes);
-    }
-
-    try {
-      if (isEditMode) {
-        await dispatch(updateRule({ id: rule.id, input })).unwrap();
-      } else {
-        await dispatch(createRule(input)).unwrap();
-      }
-      onClose();
-    } catch (error) {
-      // Error is handled by Redux state
-    }
+    formik.setFieldValue(field, value);
+    formik.setFieldTouched(field, true, false);
   };
 
   const handleClose = () => {
@@ -183,100 +157,146 @@ const RuleFormModal = ({ open, onClose, rule }) => {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        {isEditMode ? 'Edit Risk Rule' : 'Create Risk Rule'}
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ pb: 1.5, mt: -1 }}>
+        {isEditMode ? "Edit Risk Rule" : "Create Risk Rule"}
       </DialogTitle>
+      <Divider />
       <DialogContent>
-        <Box mt={2}>
+        <Box mt={0}>
           {formError && (
-            <ErrorAlert error={formError} onClose={() => dispatch(clearFormError())} />
+            <ErrorAlert
+              error={formError}
+              onClose={() => dispatch(clearFormError())}
+            />
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form id="rule-form" onSubmit={formik.handleSubmit}>
             <Grid container spacing={3}>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   fullWidth
+                  name="ruleName"
                   label="Rule Name"
-                  value={formData.ruleName}
-                  onChange={handleChange('ruleName')}
-                  error={!!errors.ruleName}
-                  helperText={errors.ruleName || 'Enter a descriptive name for this rule'}
+                  value={formik.values.ruleName}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={
+                    formik.touched.ruleName && Boolean(formik.errors.ruleName)
+                  }
+                  helperText={
+                    (formik.touched.ruleName && formik.errors.ruleName) ||
+                    "Enter a descriptive name for this rule"
+                  }
                   required
+                  size="small"
                 />
               </Grid>
 
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth error={!!errors.ruleType} required>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <FormControl
+                  fullWidth
+                  error={
+                    formik.touched.ruleType && Boolean(formik.errors.ruleType)
+                  }
+                  required
+                  size="small"
+                >
                   <InputLabel>Rule Type</InputLabel>
                   <Select
-                    value={formData.ruleType}
-                    onChange={handleChange('ruleType')}
+                    name="ruleType"
+                    value={formik.values.ruleType}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
                     label="Rule Type"
                     disabled={isEditMode} // Don't allow changing rule type in edit mode
                   >
-                    <MenuItem value="AMOUNT_THRESHOLD">Amount Threshold</MenuItem>
-                    <MenuItem value="MERCHANT_CATEGORY">Merchant Category</MenuItem>
+                    <MenuItem value="AMOUNT_THRESHOLD">
+                      Amount Threshold
+                    </MenuItem>
+                    <MenuItem value="MERCHANT_CATEGORY">
+                      Merchant Category
+                    </MenuItem>
                     <MenuItem value="FREQUENCY">Frequency</MenuItem>
                   </Select>
                   <FormHelperText>
-                    {errors.ruleType || 'Select the type of risk rule'}
+                    {(formik.touched.ruleType && formik.errors.ruleType) ||
+                      "Select the type of risk rule"}
                   </FormHelperText>
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
                   fullWidth
+                  name="riskPoints"
                   label="Risk Points"
                   type="number"
-                  value={formData.riskPoints}
-                  onChange={handleChange('riskPoints')}
-                  error={!!errors.riskPoints}
-                  helperText={errors.riskPoints || 'Points added when rule matches'}
+                  value={formik.values.riskPoints}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={
+                    formik.touched.riskPoints &&
+                    Boolean(formik.errors.riskPoints)
+                  }
+                  helperText={
+                    (formik.touched.riskPoints && formik.errors.riskPoints) ||
+                    "Points added when rule matches"
+                  }
                   required
-                  inputProps={{ min: '1' }}
+                  inputProps={{ min: "1" }}
+                  size="small"
                 />
               </Grid>
 
-              {formData.ruleType && (
-                <Grid item xs={12}>
+              {formik.values.ruleType && (
+                <Grid size={{ xs: 12 }}>
                   <RuleTypeFields
-                    ruleType={formData.ruleType}
-                    formData={formData}
-                    errors={errors}
+                    ruleType={formik.values.ruleType}
+                    formData={formik.values}
+                    errors={formik.errors}
                     onChange={handleRuleTypeFieldChange}
                   />
                 </Grid>
               )}
 
-              <Grid item xs={12}>
+              {/* <Grid size={{ xs: 12 }}>
                 <FormControlLabel
                   control={
                     <Switch
-                      checked={formData.active}
-                      onChange={handleChange('active')}
+                      name="active"
+                      checked={formik.values.active}
+                      onChange={formik.handleChange}
                       color="success"
                     />
                   }
                   label="Active"
                 />
-              </Grid>
+              </Grid> */}
             </Grid>
           </form>
         </Box>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={handleClose} disabled={formLoading}>
+      <Divider />
+      <DialogActions
+        sx={{ display: "flex", justifyContent: "space-between", height: 55 }}
+      >
+        <Button
+          onClick={handleClose}
+          disabled={formLoading}
+          variant="outlined"
+          sx={{ ml: -1.5 }}
+        >
           Cancel
         </Button>
         <Button
-          onClick={handleSubmit}
+          type="submit"
+          form="rule-form"
           variant="contained"
           disabled={formLoading}
+          sx={{ mr: -1.5 }}
         >
-          {formLoading ? 'Saving...' : isEditMode ? 'Update' : 'Create'}
+          {formLoading ? "Saving..." : isEditMode ? "Update" : "Create"}
         </Button>
       </DialogActions>
     </Dialog>
