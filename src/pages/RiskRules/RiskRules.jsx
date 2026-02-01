@@ -1,32 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Box,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Button,
   IconButton,
   Chip,
   Typography,
-  Skeleton,
   Switch,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-} from '@mui/icons-material';
-import PageHeader from '../../components/PageHeader/PageHeader';
-import ErrorAlert from '../../components/ErrorAlert/ErrorAlert';
-import RuleFormModal from './RuleFormModal';
-import {
-  fetchRules,
-  updateRule,
-} from '../../reducers/rulesSlice';
+} from "@mui/material";
+import { Add as AddIcon, Edit as EditIcon } from "@mui/icons-material";
+import PageHeader from "../../components/PageHeader/PageHeader";
+import ErrorAlert from "../../components/ErrorAlert/ErrorAlert";
+import DataGridTable from "../../components/DataGridTable/DataGridTable";
+import RuleFormModal from "./RuleFormModal";
+import { fetchRules, updateRule } from "../../reducers/rulesSlice";
 
 const RiskRules = () => {
   const dispatch = useDispatch();
@@ -34,6 +21,10 @@ const RiskRules = () => {
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedRule, setSelectedRule] = useState(null);
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 10,
+  });
 
   useEffect(() => {
     dispatch(fetchRules());
@@ -70,29 +61,128 @@ const RiskRules = () => {
 
   const getRuleTypeColor = (ruleType) => {
     switch (ruleType) {
-      case 'AMOUNT_THRESHOLD':
-        return 'primary';
-      case 'MERCHANT_CATEGORY':
-        return 'secondary';
-      case 'FREQUENCY':
-        return 'warning';
+      case "AMOUNT_THRESHOLD":
+        return "primary";
+      case "MERCHANT_CATEGORY":
+        return "secondary";
+      case "FREQUENCY":
+        return "warning";
       default:
-        return 'default';
+        return "default";
     }
   };
 
   const getRuleTypeDetails = (rule) => {
     switch (rule.ruleType) {
-      case 'AMOUNT_THRESHOLD':
+      case "AMOUNT_THRESHOLD":
         return `Threshold: $${rule.amountThreshold?.toFixed(2)}`;
-      case 'MERCHANT_CATEGORY':
+      case "MERCHANT_CATEGORY":
         return `Category: ${rule.merchantCategory}`;
-      case 'FREQUENCY':
+      case "FREQUENCY":
         return `${rule.frequencyCount} transactions in ${rule.frequencyWindowMinutes} minutes`;
       default:
-        return '';
+        return "";
     }
   };
+
+  const columns = [
+    {
+      field: "ruleName",
+      headerName: "Rule Name",
+      minWidth: 220,
+      flex: 1.3,
+      renderCell: (params) => (
+        <Typography variant="body2" fontWeight={600}>
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: "ruleType",
+      headerName: "Type",
+      minWidth: 180,
+      flex: 0.9,
+      renderCell: (params) => (
+        <Chip
+          label={params.value}
+          size="small"
+          color={getRuleTypeColor(params.value)}
+        />
+      ),
+    },
+    {
+      field: "configuration",
+      headerName: "Configuration",
+      minWidth: 320,
+      flex: 1.6,
+      sortable: false,
+      valueGetter: (value, row) => getRuleTypeDetails(row),
+      renderCell: (params) => (
+        <Typography variant="body2" color="text.secondary">
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: "riskPoints",
+      headerName: "Risk Points",
+      minWidth: 130,
+      flex: 0.7,
+      align: "center",
+      headerAlign: "center",
+      renderCell: (params) => (
+        <Typography
+          variant="h6"
+          fontWeight={700}
+          color="error.main"
+          sx={{ width: "100%", textAlign: "center" }}
+        >
+          +{params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: "active",
+      headerName: "Active",
+      minWidth: 110,
+      flex: 0.6,
+      align: "center",
+      headerAlign: "center",
+      sortable: false,
+      renderCell: (params) => (
+        <Switch
+          checked={Boolean(params.value)}
+          onChange={(event) => {
+            event.stopPropagation();
+            handleToggleActive(params.row);
+          }}
+          color="success"
+        />
+      ),
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      minWidth: 110,
+      flex: 0.6,
+      align: "center",
+      headerAlign: "center",
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <IconButton
+          size="small"
+          onClick={(event) => {
+            event.stopPropagation();
+            handleEditClick(params.row);
+          }}
+          color="primary"
+        >
+          <EditIcon />
+        </IconButton>
+      ),
+    },
+  ];
 
   return (
     <Box>
@@ -104,6 +194,7 @@ const RiskRules = () => {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleCreateClick}
+            sx={{ bgcolor: "primary.light" }}
           >
             Create Rule
           </Button>
@@ -112,87 +203,18 @@ const RiskRules = () => {
 
       {error && <ErrorAlert error={error} />}
 
-      <Paper elevation={2}>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell><strong>Rule Name</strong></TableCell>
-                <TableCell><strong>Type</strong></TableCell>
-                <TableCell><strong>Configuration</strong></TableCell>
-                <TableCell align="center"><strong>Risk Points</strong></TableCell>
-                <TableCell align="center"><strong>Active</strong></TableCell>
-                <TableCell align="center"><strong>Actions</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                [...Array(5)].map((_, index) => (
-                  <TableRow key={index}>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                  </TableRow>
-                ))
-              ) : list.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    <Typography variant="body2" color="text.secondary" py={4}>
-                      No risk rules found. Create your first rule to get started.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                list.map((rule) => (
-                  <TableRow key={rule.id}>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={600}>
-                        {rule.ruleName}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={rule.ruleType}
-                        size="small"
-                        color={getRuleTypeColor(rule.ruleType)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {getRuleTypeDetails(rule)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Typography variant="h6" fontWeight={700} color="error.main">
-                        +{rule.riskPoints}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Switch
-                        checked={rule.active}
-                        onChange={() => handleToggleActive(rule)}
-                        color="success"
-                      />
-                    </TableCell>
-                    <TableCell align="center">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleEditClick(rule)}
-                        color="primary"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
+      <DataGridTable
+        noRowsText="No risk rules found. Create your first rule to get started."
+        dataGridProps={{
+          rows: list,
+          columns,
+          loading,
+          paginationModel,
+          onPaginationModelChange: setPaginationModel,
+          pageSizeOptions: [5, 10, 25, 50],
+          sx: { height: "calc(100vh - 230px)" },
+        }}
+      />
 
       <RuleFormModal
         open={openModal}

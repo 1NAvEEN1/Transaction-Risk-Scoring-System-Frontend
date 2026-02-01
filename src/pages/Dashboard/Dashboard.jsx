@@ -3,25 +3,16 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
   Select,
   MenuItem,
   FormControl,
   InputLabel,
-  Skeleton,
   Typography,
-  Stack,
 } from '@mui/material';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import StatusChip from '../../components/StatusChip/StatusChip';
 import ErrorAlert from '../../components/ErrorAlert/ErrorAlert';
+import DataGridTable from '../../components/DataGridTable/DataGridTable';
 import {
   fetchTransactions,
   setStatusFilter,
@@ -82,6 +73,88 @@ const Dashboard = () => {
     return 'success.main';
   };
 
+  const columns = [
+    {
+      field: 'id',
+      headerName: 'Transaction ID',
+      minWidth: 140,
+      flex: 0.8,
+    },
+    {
+      field: 'customerName',
+      headerName: 'Customer',
+      minWidth: 240,
+      flex: 1.3,
+      sortable: false,
+      renderCell: (params) => (
+        <Box>
+          <Typography variant="body2" fontWeight={600}>
+            {params.row.customerName}
+          </Typography>
+          {/* <Typography variant="caption" color="text.secondary">
+            ID: {params.row.customerId}
+          </Typography> */}
+        </Box>
+      ),
+    },
+    {
+      field: 'amount',
+      headerName: 'Amount',
+      minWidth: 150,
+      flex: 0.8,
+      align: 'right',
+      headerAlign: 'right',
+      valueGetter: (value, row) => ({ amount: row.amount, currency: row.currency }),
+      valueFormatter: (value) => {
+        if (!value) return '';
+        const { amount, currency } = value;
+        if (amount == null || currency == null) return '';
+        return formatAmount(amount, currency);
+      },
+    },
+    {
+      field: 'merchantCategory',
+      headerName: 'Merchant Category',
+      minWidth: 180,
+      flex: 1,
+    },
+    {
+      field: 'timestamp',
+      headerName: 'Timestamp',
+      minWidth: 200,
+      flex: 1,
+      valueFormatter: (value) => (value ? formatDateTime(value) : ''),
+    },
+    {
+      field: 'riskScore',
+      headerName: 'Risk Score',
+      minWidth: 130,
+      flex: 0.7,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: (params) => (
+        <Typography
+          variant="h6"
+          fontWeight={700}
+          color={getRiskScoreColor(params.value)}
+          sx={{ width: '100%', textAlign: 'center' }}
+        >
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      minWidth: 130,
+      flex: 0.7,
+      align: 'center',
+      headerAlign: 'center',
+      sortable: false,
+      renderCell: (params) => <StatusChip status={params.value} />,
+    },
+  ];
+
   return (
     <Box>
       <PageHeader
@@ -105,102 +178,33 @@ const Dashboard = () => {
 
       {error && <ErrorAlert error={error} />}
 
-      <Paper elevation={2}>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell><strong>Transaction ID</strong></TableCell>
-                <TableCell><strong>Customer</strong></TableCell>
-                <TableCell align="right"><strong>Amount</strong></TableCell>
-                <TableCell><strong>Merchant Category</strong></TableCell>
-                <TableCell><strong>Timestamp</strong></TableCell>
-                <TableCell align="center"><strong>Risk Score</strong></TableCell>
-                <TableCell align="center"><strong>Status</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                // Loading skeleton
-                [...Array(size)].map((_, index) => (
-                  <TableRow key={index}>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                    <TableCell><Skeleton /></TableCell>
-                  </TableRow>
-                ))
-              ) : list.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    <Typography variant="body2" color="text.secondary" py={4}>
-                      No transactions found
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                list.map((transaction) => (
-                  <TableRow
-                    key={transaction.id}
-                    hover
-                    onClick={() => handleRowClick(transaction.id)}
-                    sx={{ cursor: 'pointer' }}
-                  >
-                    <TableCell>{transaction.id}</TableCell>
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body2" fontWeight={600}>
-                          {transaction.customerName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          ID: {transaction.customerId}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell align="right">
-                      {formatAmount(transaction.amount, transaction.currency)}
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {transaction.merchantCategory}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {formatDateTime(transaction.timestamp)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Typography
-                        variant="h6"
-                        fontWeight={700}
-                        color={getRiskScoreColor(transaction.riskScore)}
-                      >
-                        {transaction.riskScore}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <StatusChip status={transaction.status} />
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          component="div"
-          count={totalElements}
-          page={page}
-          onPageChange={handleChangePage}
-          rowsPerPage={size}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[5, 10, 25, 50]}
-        />
-      </Paper>
+      <DataGridTable
+        noRowsText="No transactions found"
+        dataGridProps={{
+          rows: list,
+          columns,
+          loading,
+          paginationMode: 'server',
+          rowCount: totalElements,
+          paginationModel: { page, pageSize: size },
+          onPaginationModelChange: (model) => {
+            // Handle pageSize changes first (slice resets page to 0)
+            if (model.pageSize !== size) {
+              dispatch(setSize(model.pageSize));
+              return;
+            }
+            if (model.page !== page) {
+              dispatch(setPage(model.page));
+            }
+          },
+          pageSizeOptions: [5, 10, 25, 50],
+          onRowClick: (params) => handleRowClick(params.id),
+          sx: {
+            // '& .MuiDataGrid-row': { cursor: 'pointer' },
+            height:"calc(100vh - 230px)"
+          },
+        }}
+      />
     </Box>
   );
 };
