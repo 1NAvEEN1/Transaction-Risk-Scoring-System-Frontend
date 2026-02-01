@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useFormik } from "formik";
-import * as Yup from "yup";
 import {
   Dialog,
   DialogTitle,
@@ -27,56 +26,8 @@ import {
   updateRule,
   clearFormError,
 } from "../../reducers/rulesSlice";
-
-// Validation schema
-const validationSchema = Yup.object({
-  ruleName: Yup.string()
-    .trim()
-    .required("Rule name is required")
-    .min(1, "Rule name cannot be empty"),
-  ruleType: Yup.string()
-    .required("Rule type is required")
-    .oneOf(
-      ["AMOUNT_THRESHOLD", "MERCHANT_CATEGORY", "FREQUENCY"],
-      "Invalid rule type",
-    ),
-  riskPoints: Yup.number()
-    .required("Risk points is required")
-    .positive("Risk points must be greater than 0")
-    .integer("Risk points must be a whole number"),
-  amountThreshold: Yup.number().when("ruleType", {
-    is: "AMOUNT_THRESHOLD",
-    then: (schema) =>
-      schema
-        .required("Amount threshold is required")
-        .positive("Amount threshold must be greater than 0"),
-    otherwise: (schema) => schema.notRequired(),
-  }),
-  merchantCategory: Yup.string().when("ruleType", {
-    is: "MERCHANT_CATEGORY",
-    then: (schema) => schema.required("Merchant category is required"),
-    otherwise: (schema) => schema.notRequired(),
-  }),
-  frequencyCount: Yup.number().when("ruleType", {
-    is: "FREQUENCY",
-    then: (schema) =>
-      schema
-        .required("Frequency count is required")
-        .positive("Frequency count must be greater than 0")
-        .integer("Frequency count must be a whole number"),
-    otherwise: (schema) => schema.notRequired(),
-  }),
-  frequencyWindowMinutes: Yup.number().when("ruleType", {
-    is: "FREQUENCY",
-    then: (schema) =>
-      schema
-        .required("Time window is required")
-        .positive("Time window must be greater than 0")
-        .integer("Time window must be a whole number"),
-    otherwise: (schema) => schema.notRequired(),
-  }),
-  active: Yup.boolean(),
-});
+import { ruleValidationSchema } from "../../validation/ruleValidation";
+import { showAlertMessage } from "../../app/alertMessageController";
 
 const RuleFormModal = ({ open, onClose, rule }) => {
   const dispatch = useDispatch();
@@ -95,7 +46,7 @@ const RuleFormModal = ({ open, onClose, rule }) => {
       riskPoints: "",
       active: true,
     },
-    validationSchema: validationSchema,
+    validationSchema: ruleValidationSchema,
     onSubmit: async (values) => {
       const input = {
         ruleName: values.ruleName.trim(),
@@ -122,7 +73,7 @@ const RuleFormModal = ({ open, onClose, rule }) => {
         }
         onClose();
       } catch (error) {
-        // Error is handled by Redux state
+        showAlertMessage({ message: error.message, type: "error" });
       }
     },
   });
@@ -209,7 +160,7 @@ const RuleFormModal = ({ open, onClose, rule }) => {
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
                     label="Rule Type"
-                    disabled={isEditMode} // Don't allow changing rule type in edit mode
+                    disabled={isEditMode}
                   >
                     <MenuItem value="AMOUNT_THRESHOLD">
                       Amount Threshold

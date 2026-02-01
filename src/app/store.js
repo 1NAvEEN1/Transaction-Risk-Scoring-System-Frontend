@@ -1,5 +1,4 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
-import userReducer from "../reducers/userSlice";
 import loaderReducer from "../reducers/loaderSlice";
 import successMessageSlice from "../reducers/successMessageSlice";
 import networkStatusSlice from "../reducers/networkStatusSlice";
@@ -17,7 +16,6 @@ const persistConfig = {
 };
 
 const rootReducer = combineReducers({
-  user: userReducer,
   loader: loaderReducer,
   success: successMessageSlice,
   networkStatus: networkStatusSlice,
