@@ -1,11 +1,12 @@
 // Transaction Queries
 export const GET_TRANSACTIONS = `
-  query GetTransactions($page: Int, $size: Int, $status: String) {
-    transactions(page: $page, size: $size, status: $status) {
+ query GetTransactions($page: Int, $size: Int, $status: String, $searchQuery: String) {
+  transactions(page: $page, size: $size, status: $status, searchQuery: $searchQuery){
       content {
         id
         customerId
         customerName
+        customerEmail
         amount
         currency
         timestamp

@@ -4,9 +4,9 @@ import { transactionService } from "../services/TransactionService";
 // Async thunks
 export const fetchTransactions = createAsyncThunk(
   "transactions/fetchTransactions",
-  async ({ page = 0, size = 10, status = 'ALL' }, { rejectWithValue }) => {
+  async ({ page = 0, size = 10, status = 'ALL', searchQuery = '' }, { rejectWithValue }) => {
     try {
-      const data = await transactionService.fetchTransactions({ page, size, status });
+      const data = await transactionService.fetchTransactions({ page, size, status, searchQuery });
       return data.transactions;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -45,6 +45,7 @@ const initialState = {
   totalElements: 0,
   totalPages: 0,
   statusFilter: 'ALL',
+  searchQuery: '',
   selectedTransaction: null,
   loading: false,
   error: null,
@@ -59,6 +60,10 @@ const transactionsSlice = createSlice({
     setStatusFilter: (state, action) => {
       state.statusFilter = action.payload;
       state.page = 0; // Reset to first page when filter changes
+    },
+    setSearchQuery: (state, action) => {
+      state.searchQuery = action.payload;
+      state.page = 0; // Reset to first page when search changes
     },
     setPage: (state, action) => {
       state.page = action.payload;
@@ -128,6 +133,7 @@ const transactionsSlice = createSlice({
 
 export const {
   setStatusFilter,
+  setSearchQuery,
   setPage,
   setSize,
   clearSelectedTransaction,

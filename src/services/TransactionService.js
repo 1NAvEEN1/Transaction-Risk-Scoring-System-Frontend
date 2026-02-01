@@ -6,11 +6,14 @@ import {
 } from "../graphql/queries";
 
 export const transactionService = {
-  // Fetch paginated transactions with optional status filter
-  fetchTransactions: async ({ page = 0, size = 10, status = null }) => {
+  // Fetch paginated transactions with optional status filter and search query
+  fetchTransactions: async ({ page = 0, size = 10, status = null, searchQuery = '' }) => {
     const variables = { page, size };
     if (status && status !== 'ALL') {
       variables.status = status;
+    }
+    if (searchQuery && searchQuery.trim() !== '') {
+      variables.searchQuery = searchQuery.trim();
     }
     return await graphql({ query: GET_TRANSACTIONS, variables });
   },

@@ -7,7 +7,10 @@ import {
   FormControl,
   InputLabel,
   Typography,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
 import PageHeader from "../../components/PageHeader/PageHeader";
 import StatusChip from "../../components/StatusChip/StatusChip";
 import ErrorAlert from "../../components/ErrorAlert/ErrorAlert";
@@ -16,24 +19,51 @@ import TransactionDetailsDialog from "../TransactionDetails/TransactionDetailsDi
 import {
   fetchTransactions,
   setStatusFilter,
+  setSearchQuery,
   setPage,
   setSize,
 } from "../../reducers/transactionsSlice";
 
 const Dashboard = () => {
   const dispatch = useDispatch();
-  const { list, page, size, totalElements, statusFilter, loading, error } =
-    useSelector((state) => state.transactions);
+  const {
+    list,
+    page,
+    size,
+    totalElements,
+    statusFilter,
+    searchQuery,
+    loading,
+    error,
+  } = useSelector((state) => state.transactions);
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedTransactionId, setSelectedTransactionId] = useState(null);
+  const [searchInput, setSearchInput] = useState(searchQuery || "");
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== searchQuery) {
+        dispatch(setSearchQuery(searchInput));
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchInput, searchQuery, dispatch]);
 
   useEffect(() => {
-    dispatch(fetchTransactions({ page, size, status: statusFilter }));
-  }, [dispatch, page, size, statusFilter]);
+    dispatch(
+      fetchTransactions({ page, size, status: statusFilter, searchQuery }),
+    );
+  }, [dispatch, page, size, statusFilter, searchQuery]);
 
   const handleStatusFilterChange = (event) => {
     dispatch(setStatusFilter(event.target.value));
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchInput(event.target.value);
   };
 
   const handleRowClick = (id) => {
@@ -69,24 +99,26 @@ const Dashboard = () => {
   const columns = [
     {
       field: "id",
-      headerName: "Transaction ID",
-      minWidth: 140,
-      flex: 0.8,
+      headerName: "TID",
+      minWidth: 30,
+      // flex: 0.8,
     },
     {
       field: "customerName",
       headerName: "Customer",
       minWidth: 240,
-      flex: 1.3,
+      flex: 1,
       sortable: false,
       renderCell: (params) => (
-        <Box>
-          <Typography variant="body2" fontWeight={600}>
-            {params.row.customerName}
+        <Box display={"flex"} alignItems={"center"}>
+          <Typography>{params.row.customerName}</Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ marginLeft: 1 }}
+          >
+            ({params.row.customerEmail})
           </Typography>
-          {/* <Typography variant="caption" color="text.secondary">
-            ID: {params.row.customerId}
-          </Typography> */}
         </Box>
       ),
     },
@@ -94,7 +126,7 @@ const Dashboard = () => {
       field: "amount",
       headerName: "Amount",
       minWidth: 150,
-      flex: 0.8,
+      // flex: 0.8,
       align: "right",
       headerAlign: "right",
       valueGetter: (value, row) => ({
@@ -112,20 +144,20 @@ const Dashboard = () => {
       field: "merchantCategory",
       headerName: "Merchant Category",
       minWidth: 180,
-      flex: 1,
+      // flex: 1,
     },
     {
       field: "timestamp",
       headerName: "Timestamp",
       minWidth: 200,
-      flex: 1,
+      // flex: 1,
       valueFormatter: (value) => (value ? formatDateTime(value) : ""),
     },
     {
       field: "riskScore",
       headerName: "Risk Score",
       minWidth: 130,
-      flex: 0.7,
+      // flex: 0.7,
       align: "center",
       headerAlign: "center",
       renderCell: (params) => (
@@ -142,7 +174,7 @@ const Dashboard = () => {
       field: "status",
       headerName: "Status",
       minWidth: 130,
-      flex: 0.7,
+      // flex: 0.7,
       align: "center",
       headerAlign: "center",
       sortable: false,
@@ -156,18 +188,34 @@ const Dashboard = () => {
         title="Transactions"
         subtitle="Monitor and review transaction risk assessments"
         actions={
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Status Filter</InputLabel>
-            <Select
-              value={statusFilter}
-              onChange={handleStatusFilterChange}
-              label="Status Filter"
-            >
-              <MenuItem value="ALL">All</MenuItem>
-              <MenuItem value="APPROVED">Approved</MenuItem>
-              <MenuItem value="FLAGGED">Flagged</MenuItem>
-            </Select>
-          </FormControl>
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <TextField
+              size="small"
+              placeholder="Search by name or email..."
+              value={searchInput}
+              onChange={handleSearchChange}
+              sx={{ minWidth: 250 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Status Filter</InputLabel>
+              <Select
+                value={statusFilter}
+                onChange={handleStatusFilterChange}
+                label="Status Filter"
+              >
+                <MenuItem value="ALL">All</MenuItem>
+                <MenuItem value="APPROVED">Approved</MenuItem>
+                <MenuItem value="FLAGGED">Flagged</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
         }
       />
 
@@ -209,7 +257,6 @@ const Dashboard = () => {
     </Box>
   );
 };
-
 
 Dashboard.propTypes = {};
 
