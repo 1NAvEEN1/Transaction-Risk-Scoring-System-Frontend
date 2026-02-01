@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { AppBar, Toolbar, Typography, IconButton } from "@mui/material";
 import { Menu as MenuIcon } from "@mui/icons-material";
 
@@ -52,6 +53,13 @@ const Header = ({
       </Toolbar>
     </AppBar>
   );
+};
+
+Header.propTypes = {
+  mobileOpen: PropTypes.bool.isRequired,
+  handleDrawerToggle: PropTypes.func.isRequired,
+  desktopOpen: PropTypes.bool.isRequired,
+  handleDesktopDrawerToggle: PropTypes.func.isRequired,
 };
 
 export default Header;

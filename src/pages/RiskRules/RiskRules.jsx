@@ -224,4 +224,7 @@ const RiskRules = () => {
   );
 };
 
+
+RiskRules.propTypes = {};
+
 export default RiskRules;

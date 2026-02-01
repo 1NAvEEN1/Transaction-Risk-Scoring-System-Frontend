@@ -23,4 +23,7 @@ const Loader = () => (
   </LoaderWrapper>
 );
 
+// No props needed
+Loader.propTypes = {};
+
 export default Loader;

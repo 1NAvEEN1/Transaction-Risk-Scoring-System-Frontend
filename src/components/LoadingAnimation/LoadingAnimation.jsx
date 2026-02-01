@@ -16,4 +16,7 @@ const LoadingAnimation = () => {
   );
 };
 
+// No props needed - this component gets all data from Redux
+LoadingAnimation.propTypes = {};
+
 export default LoadingAnimation;

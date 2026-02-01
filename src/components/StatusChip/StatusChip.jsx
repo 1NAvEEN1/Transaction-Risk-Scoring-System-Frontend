@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Chip } from '@mui/material';
 
 const StatusChip = ({ status }) => {
@@ -32,6 +33,10 @@ const StatusChip = ({ status }) => {
       sx={{ fontWeight: 600 }}
     />
   );
+};
+
+StatusChip.propTypes = {
+  status: PropTypes.oneOf(['APPROVED', 'FLAGGED']).isRequired,
 };
 
 export default StatusChip;

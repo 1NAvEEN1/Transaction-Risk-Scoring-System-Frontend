@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { Box, Paper, Typography } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 
@@ -11,6 +12,10 @@ function DefaultNoRowsOverlay({ text = "No records found" }) {
     </Box>
   );
 }
+
+DefaultNoRowsOverlay.propTypes = {
+  text: PropTypes.string,
+};
 
 /**
  * Reusable table wrapper around MUI X DataGrid.
@@ -118,3 +123,29 @@ export default function DataGridTable({
     </Box>
   );
 }
+
+DataGridTable.propTypes = {
+  dataGridProps: PropTypes.shape({
+    rows: PropTypes.array,
+    columns: PropTypes.array,
+    autoHeight: PropTypes.bool,
+    pagination: PropTypes.bool,
+    disableRowSelectionOnClick: PropTypes.bool,
+    pageSizeOptions: PropTypes.arrayOf(PropTypes.number),
+    paginationModel: PropTypes.shape({
+      page: PropTypes.number,
+      pageSize: PropTypes.number,
+    }),
+    onPaginationModelChange: PropTypes.func,
+    rowCount: PropTypes.number,
+    paginationMode: PropTypes.oneOf(['client', 'server']),
+    loading: PropTypes.bool,
+    onRowClick: PropTypes.func,
+    slots: PropTypes.object,
+    slotProps: PropTypes.object,
+    sx: PropTypes.object,
+  }),
+  boxSx: PropTypes.object,
+  noRowsText: PropTypes.string,
+  noResultsText: PropTypes.string,
+};

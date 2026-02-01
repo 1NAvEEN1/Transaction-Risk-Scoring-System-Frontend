@@ -273,4 +273,7 @@ const SubmitTransaction = () => {
   );
 };
 
+
+SubmitTransaction.propTypes = {};
+
 export default SubmitTransaction;

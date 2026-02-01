@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Box } from "@mui/material";
 import Header from "./Header";
@@ -73,5 +74,7 @@ const Layout = () => {
     </Box>
   );
 };
+
+Layout.propTypes = {};
 
 export default Layout;

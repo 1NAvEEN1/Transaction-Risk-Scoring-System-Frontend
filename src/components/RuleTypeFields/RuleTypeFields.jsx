@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import {
   TextField,
   Select,
@@ -85,6 +86,23 @@ const RuleTypeFields = ({ ruleType, formData, errors, onChange }) => {
       )}
     </Box>
   );
+};
+
+RuleTypeFields.propTypes = {
+  ruleType: PropTypes.oneOf(['AMOUNT_THRESHOLD', 'MERCHANT_CATEGORY', 'FREQUENCY']).isRequired,
+  formData: PropTypes.shape({
+    amountThreshold: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    merchantCategory: PropTypes.oneOf(['RETAIL', 'GAMBLING', 'CRYPTO', 'OTHER']),
+    frequencyCount: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    frequencyWindowMinutes: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  }).isRequired,
+  errors: PropTypes.shape({
+    amountThreshold: PropTypes.string,
+    merchantCategory: PropTypes.string,
+    frequencyCount: PropTypes.string,
+    frequencyWindowMinutes: PropTypes.string,
+  }).isRequired,
+  onChange: PropTypes.func.isRequired,
 };
 
 export default RuleTypeFields;

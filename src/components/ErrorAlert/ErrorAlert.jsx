@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Alert, AlertTitle } from '@mui/material';
 
 const ErrorAlert = ({ error, onClose }) => {
@@ -10,6 +11,11 @@ const ErrorAlert = ({ error, onClose }) => {
       {error}
     </Alert>
   );
+};
+
+ErrorAlert.propTypes = {
+  error: PropTypes.string,
+  onClose: PropTypes.func,
 };
 
 export default ErrorAlert;

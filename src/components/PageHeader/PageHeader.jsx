@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Typography, Box, Stack, Divider } from '@mui/material';
 
 const PageHeader = ({ title, actions, subtitle }) => {
@@ -25,6 +26,12 @@ const PageHeader = ({ title, actions, subtitle }) => {
       <Divider sx={{ mt: 2 }} />
     </Box>
   );
+};
+
+PageHeader.propTypes = {
+  title: PropTypes.string.isRequired,
+  subtitle: PropTypes.string,
+  actions: PropTypes.node,
 };
 
 export default PageHeader;

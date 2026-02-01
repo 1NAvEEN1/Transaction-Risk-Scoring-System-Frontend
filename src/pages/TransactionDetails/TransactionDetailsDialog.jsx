@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import PropTypes from "prop-types";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Dialog,
@@ -377,3 +378,9 @@ export default function TransactionDetailsDialog({
     </Dialog>
   );
 }
+
+TransactionDetailsDialog.propTypes = {
+  open: PropTypes.bool.isRequired,
+  transactionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onClose: PropTypes.func,
+};

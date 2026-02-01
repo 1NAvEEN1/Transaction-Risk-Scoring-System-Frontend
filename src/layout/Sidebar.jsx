@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Drawer,
@@ -144,6 +145,13 @@ const Sidebar = ({
       </Drawer>
     </>
   );
+};
+
+Sidebar.propTypes = {
+  mobileOpen: PropTypes.bool.isRequired,
+  handleDrawerToggle: PropTypes.func.isRequired,
+  desktopOpen: PropTypes.bool.isRequired,
+  handleDesktopDrawerToggle: PropTypes.func.isRequired,
 };
 
 export default Sidebar;

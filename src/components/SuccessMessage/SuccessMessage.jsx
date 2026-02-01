@@ -56,4 +56,7 @@ const SuccessMessage = () => {
   );
 };
 
+// No props needed - this component gets all data from Redux
+SuccessMessage.propTypes = {};
+
 export default SuccessMessage;

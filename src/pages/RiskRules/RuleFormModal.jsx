@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import PropTypes from "prop-types";
 import { useDispatch, useSelector } from "react-redux";
 import { useFormik } from "formik";
 import {
@@ -28,6 +29,7 @@ import {
 } from "../../reducers/rulesSlice";
 import { ruleValidationSchema } from "../../validation/ruleValidation";
 import { showAlertMessage } from "../../app/alertMessageController";
+import { RiskRuleShape } from "../../utils/propTypes";
 
 const RuleFormModal = ({ open, onClose, rule }) => {
   const dispatch = useDispatch();
@@ -252,6 +254,12 @@ const RuleFormModal = ({ open, onClose, rule }) => {
       </DialogActions>
     </Dialog>
   );
+};
+
+RuleFormModal.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  rule: RiskRuleShape, // Optional - only present in edit mode
 };
 
 export default RuleFormModal;
