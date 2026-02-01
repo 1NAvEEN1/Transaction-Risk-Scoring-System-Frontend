@@ -24,9 +24,6 @@ export const transactionValidationSchema = Yup.object({
   currency: Yup.string()
     .required('Currency is required')
     .oneOf(['USD', 'EUR', 'GBP', 'LKR'], 'Invalid currency'),
-  timestamp: Yup.date()
-    .required('Timestamp is required')
-    .max(getLocalDateTimeString(), 'Timestamp cannot be in the future'),
   merchantCategory: Yup.string()
     .required('Merchant category is required')
     .oneOf(['RETAIL', 'GAMBLING', 'CRYPTO', 'OTHER'], 'Invalid merchant category'),

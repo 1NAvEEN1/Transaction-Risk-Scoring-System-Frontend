@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { useFormik } from 'formik';
+import React, { useEffect, useState, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { useFormik } from "formik";
 import {
   Box,
   Grid,
@@ -14,21 +14,26 @@ import {
   FormHelperText,
   Snackbar,
   Alert,
-} from '@mui/material';
-import PageHeader from '../../components/PageHeader/PageHeader';
-import ErrorAlert from '../../components/ErrorAlert/ErrorAlert';
-import { submitTransaction, clearSubmitError, clearSelectedTransaction } from '../../reducers/transactionsSlice';
-import { fetchCustomers } from '../../reducers/customersSlice';
-import { transactionValidationSchema, getLocalDateTimeString } from '../../validation/transactionValidation';
+  CircularProgress,
+} from "@mui/material";
+import PageHeader from "../../components/PageHeader/PageHeader";
+import ErrorAlert from "../../components/ErrorAlert/ErrorAlert";
+import {
+  submitTransaction,
+  clearSubmitError,
+  clearSelectedTransaction,
+} from "../../reducers/transactionsSlice";
+import { fetchCustomers } from "../../reducers/customersSlice";
+import { transactionValidationSchema } from "../../validation/transactionValidation";
 
 const SubmitTransaction = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { submitLoading, submitError, selectedTransaction } = useSelector(
-    (state) => state.transactions
+    (state) => state.transactions,
   );
   const { list: customers = [], loading: customersLoading } = useSelector(
-    (state) => state.customers
+    (state) => state.customers,
   );
 
   const [showSuccess, setShowSuccess] = useState(false);
@@ -36,11 +41,10 @@ const SubmitTransaction = () => {
 
   const formik = useFormik({
     initialValues: {
-      customerId: '',
-      amount: '',
-      currency: 'USD',
-      timestamp: getLocalDateTimeString(),
-      merchantCategory: '',
+      customerId: "",
+      amount: "",
+      currency: "USD",
+      merchantCategory: "",
     },
     validationSchema: transactionValidationSchema,
     onSubmit: (values) => {
@@ -49,38 +53,21 @@ const SubmitTransaction = () => {
         customerId: parseInt(values.customerId),
         amount: parseFloat(values.amount),
         currency: values.currency,
-        timestamp: new Date(values.timestamp).toISOString(),
         merchantCategory: values.merchantCategory,
       };
       dispatch(submitTransaction(input));
+      dispatch(clearSelectedTransaction());
+      navigate(`/dashboard`);
     },
   });
 
   useEffect(() => {
+    dispatch(clearSelectedTransaction());
     dispatch(fetchCustomers());
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (selectedTransaction && !submitLoading && !submitError && !hasNavigated.current) {
-      hasNavigated.current = true;
-      setShowSuccess(true);
-      setTimeout(() => {
-        navigate(`/dashboard`);
-        dispatch(clearSelectedTransaction());
-      }, 1500);
-    }
-  }, [selectedTransaction, submitLoading, submitError, navigate, dispatch]);
-
-  // Clear selected transaction when component unmounts
-  useEffect(() => {
-    return () => {
-      dispatch(clearSelectedTransaction());
-    };
   }, [dispatch]);
 
   const handleReset = () => {
     formik.resetForm();
-    formik.setFieldValue('timestamp', getLocalDateTimeString());
     dispatch(clearSubmitError());
   };
 
@@ -92,7 +79,10 @@ const SubmitTransaction = () => {
       />
 
       {submitError && (
-        <ErrorAlert error={submitError} onClose={() => dispatch(clearSubmitError())} />
+        <ErrorAlert
+          error={submitError}
+          onClose={() => dispatch(clearSubmitError())}
+        />
       )}
 
       <Box
@@ -105,10 +95,12 @@ const SubmitTransaction = () => {
         <form onSubmit={formik.handleSubmit}>
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 6 }}>
-              <FormControl 
-                fullWidth 
-                error={formik.touched.customerId && Boolean(formik.errors.customerId)} 
-                required 
+              <FormControl
+                fullWidth
+                error={
+                  formik.touched.customerId && Boolean(formik.errors.customerId)
+                }
+                required
                 size="small"
               >
                 <InputLabel>Customer</InputLabel>
@@ -128,9 +120,9 @@ const SubmitTransaction = () => {
                   ))}
                 </Select>
                 <FormHelperText>
-                  {formik.touched.customerId && formik.errors.customerId 
-                    ? formik.errors.customerId 
-                    : 'Select the customer making the transaction'}
+                  {formik.touched.customerId && formik.errors.customerId
+                    ? formik.errors.customerId
+                    : "Select the customer making the transaction"}
                 </FormHelperText>
               </FormControl>
             </Grid>
@@ -146,21 +138,23 @@ const SubmitTransaction = () => {
                 onBlur={formik.handleBlur}
                 error={formik.touched.amount && Boolean(formik.errors.amount)}
                 helperText={
-                  formik.touched.amount && formik.errors.amount 
-                    ? formik.errors.amount 
-                    : 'Enter transaction amount'
+                  formik.touched.amount && formik.errors.amount
+                    ? formik.errors.amount
+                    : "Enter transaction amount"
                 }
                 required
-                inputProps={{ step: '0.01', min: '0.01' }}
+                inputProps={{ step: "0.01", min: "0.01" }}
                 size="small"
               />
             </Grid>
 
             <Grid size={{ xs: 12, md: 6 }}>
-              <FormControl 
-                fullWidth 
-                error={formik.touched.currency && Boolean(formik.errors.currency)} 
-                required 
+              <FormControl
+                fullWidth
+                error={
+                  formik.touched.currency && Boolean(formik.errors.currency)
+                }
+                required
                 size="small"
               >
                 <InputLabel>Currency</InputLabel>
@@ -178,41 +172,21 @@ const SubmitTransaction = () => {
                   <MenuItem value="LKR">LKR</MenuItem>
                 </Select>
                 <FormHelperText>
-                  {formik.touched.currency && formik.errors.currency 
-                    ? formik.errors.currency 
-                    : 'Select transaction currency'}
+                  {formik.touched.currency && formik.errors.currency
+                    ? formik.errors.currency
+                    : "Select transaction currency"}
                 </FormHelperText>
               </FormControl>
             </Grid>
 
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
+              <FormControl
                 fullWidth
-                name="timestamp"
-                label="Timestamp"
-                type="datetime-local"
-                value={formik.values.timestamp}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={formik.touched.timestamp && Boolean(formik.errors.timestamp)}
-                helperText={
-                  formik.touched.timestamp && formik.errors.timestamp 
-                    ? formik.errors.timestamp 
-                    : 'Select transaction date and time'
+                error={
+                  formik.touched.merchantCategory &&
+                  Boolean(formik.errors.merchantCategory)
                 }
                 required
-                InputLabelProps={{
-                  shrink: true,
-                }}
-                size="small"
-              />
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <FormControl 
-                fullWidth 
-                error={formik.touched.merchantCategory && Boolean(formik.errors.merchantCategory)} 
-                required 
                 size="small"
               >
                 <InputLabel>Merchant Category</InputLabel>
@@ -230,9 +204,10 @@ const SubmitTransaction = () => {
                   <MenuItem value="OTHER">Other</MenuItem>
                 </Select>
                 <FormHelperText>
-                  {formik.touched.merchantCategory && formik.errors.merchantCategory 
-                    ? formik.errors.merchantCategory 
-                    : 'Select merchant category'}
+                  {formik.touched.merchantCategory &&
+                  formik.errors.merchantCategory
+                    ? formik.errors.merchantCategory
+                    : "Select merchant category"}
                 </FormHelperText>
               </FormControl>
             </Grid>
@@ -250,8 +225,13 @@ const SubmitTransaction = () => {
                   type="submit"
                   variant="contained"
                   disabled={submitLoading}
+                  startIcon={
+                    submitLoading ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : null
+                  }
                 >
-                  {submitLoading ? 'Submitting...' : 'Submit Transaction'}
+                  {submitLoading ? "Submitting..." : "Submit Transaction"}
                 </Button>
               </Box>
             </Grid>
@@ -263,7 +243,7 @@ const SubmitTransaction = () => {
         open={showSuccess}
         autoHideDuration={3000}
         onClose={() => setShowSuccess(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert severity="success" variant="filled">
           Transaction submitted successfully! Redirecting...
@@ -272,7 +252,6 @@ const SubmitTransaction = () => {
     </Box>
   );
 };
-
 
 SubmitTransaction.propTypes = {};
 
