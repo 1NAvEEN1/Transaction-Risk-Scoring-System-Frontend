@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Box,
   Select,
@@ -7,30 +7,23 @@ import {
   FormControl,
   InputLabel,
   Typography,
-} from '@mui/material';
-import PageHeader from '../../components/PageHeader/PageHeader';
-import StatusChip from '../../components/StatusChip/StatusChip';
-import ErrorAlert from '../../components/ErrorAlert/ErrorAlert';
-import DataGridTable from '../../components/DataGridTable/DataGridTable';
-import TransactionDetailsDialog from '../TransactionDetails/TransactionDetailsDialog';
+} from "@mui/material";
+import PageHeader from "../../components/PageHeader/PageHeader";
+import StatusChip from "../../components/StatusChip/StatusChip";
+import ErrorAlert from "../../components/ErrorAlert/ErrorAlert";
+import DataGridTable from "../../components/DataGridTable/DataGridTable";
+import TransactionDetailsDialog from "../TransactionDetails/TransactionDetailsDialog";
 import {
   fetchTransactions,
   setStatusFilter,
   setPage,
   setSize,
-} from '../../reducers/transactionsSlice';
+} from "../../reducers/transactionsSlice";
 
 const Dashboard = () => {
   const dispatch = useDispatch();
-  const {
-    list,
-    page,
-    size,
-    totalElements,
-    statusFilter,
-    loading,
-    error,
-  } = useSelector((state) => state.transactions);
+  const { list, page, size, totalElements, statusFilter, loading, error } =
+    useSelector((state) => state.transactions);
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedTransactionId, setSelectedTransactionId] = useState(null);
@@ -54,35 +47,35 @@ const Dashboard = () => {
   };
 
   const formatAmount = (amount, currency) => {
-    return `${currency} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${currency} ${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const formatDateTime = (timestamp) => {
-    return new Date(timestamp).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Date(timestamp).toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getRiskScoreColor = (score) => {
-    if (score >= 70) return 'error.main';
-    if (score >= 40) return 'warning.main';
-    return 'success.main';
+    if (score >= 70) return "error.main";
+    if (score >= 40) return "warning.main";
+    return "success.main";
   };
 
   const columns = [
     {
-      field: 'id',
-      headerName: 'Transaction ID',
+      field: "id",
+      headerName: "Transaction ID",
       minWidth: 140,
       flex: 0.8,
     },
     {
-      field: 'customerName',
-      headerName: 'Customer',
+      field: "customerName",
+      headerName: "Customer",
       minWidth: 240,
       flex: 1.3,
       sortable: false,
@@ -98,58 +91,60 @@ const Dashboard = () => {
       ),
     },
     {
-      field: 'amount',
-      headerName: 'Amount',
+      field: "amount",
+      headerName: "Amount",
       minWidth: 150,
       flex: 0.8,
-      align: 'right',
-      headerAlign: 'right',
-      valueGetter: (value, row) => ({ amount: row.amount, currency: row.currency }),
+      align: "right",
+      headerAlign: "right",
+      valueGetter: (value, row) => ({
+        amount: row.amount,
+        currency: row.currency,
+      }),
       valueFormatter: (value) => {
-        if (!value) return '';
+        if (!value) return "";
         const { amount, currency } = value;
-        if (amount == null || currency == null) return '';
+        if (amount == null || currency == null) return "";
         return formatAmount(amount, currency);
       },
     },
     {
-      field: 'merchantCategory',
-      headerName: 'Merchant Category',
+      field: "merchantCategory",
+      headerName: "Merchant Category",
       minWidth: 180,
       flex: 1,
     },
     {
-      field: 'timestamp',
-      headerName: 'Timestamp',
+      field: "timestamp",
+      headerName: "Timestamp",
       minWidth: 200,
       flex: 1,
-      valueFormatter: (value) => (value ? formatDateTime(value) : ''),
+      valueFormatter: (value) => (value ? formatDateTime(value) : ""),
     },
     {
-      field: 'riskScore',
-      headerName: 'Risk Score',
+      field: "riskScore",
+      headerName: "Risk Score",
       minWidth: 130,
       flex: 0.7,
-      align: 'center',
-      headerAlign: 'center',
+      align: "center",
+      headerAlign: "center",
       renderCell: (params) => (
         <Typography
-          variant="h6"
-          fontWeight={700}
+          fontWeight={600}
           color={getRiskScoreColor(params.value)}
-          sx={{ width: '100%', textAlign: 'center' }}
+          sx={{ width: "100%", textAlign: "center" }}
         >
           {params.value}
         </Typography>
       ),
     },
     {
-      field: 'status',
-      headerName: 'Status',
+      field: "status",
+      headerName: "Status",
       minWidth: 130,
       flex: 0.7,
-      align: 'center',
-      headerAlign: 'center',
+      align: "center",
+      headerAlign: "center",
       sortable: false,
       renderCell: (params) => <StatusChip status={params.value} />,
     },
@@ -184,7 +179,7 @@ const Dashboard = () => {
           rows: list,
           columns,
           loading,
-          paginationMode: 'server',
+          paginationMode: "server",
           rowCount: totalElements,
           paginationModel: { page, pageSize: size },
           onPaginationModelChange: (model) => {
@@ -201,7 +196,7 @@ const Dashboard = () => {
           onRowClick: (params) => handleRowClick(params.id),
           sx: {
             // '& .MuiDataGrid-row': { cursor: 'pointer' },
-            height:"calc(100vh - 230px)"
+            height: "calc(100vh - 200px)",
           },
         }}
       />

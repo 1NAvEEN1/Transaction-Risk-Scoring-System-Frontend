@@ -132,8 +132,7 @@ const RiskRules = () => {
       headerAlign: "center",
       renderCell: (params) => (
         <Typography
-          variant="h6"
-          fontWeight={700}
+          fontWeight={600}
           color="error.main"
           sx={{ width: "100%", textAlign: "center" }}
         >
@@ -212,7 +211,7 @@ const RiskRules = () => {
           paginationModel,
           onPaginationModelChange: setPaginationModel,
           pageSizeOptions: [5, 10, 25, 50],
-          sx: { height: "calc(100vh - 230px)" },
+          sx: { height: "calc(100vh - 200px)" },
         }}
       />
 

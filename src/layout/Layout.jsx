@@ -29,6 +29,7 @@ const Layout = () => {
     <Box sx={{ display: "flex" }}>
       <Box
         sx={{
+          display: { xs: "none", sm: "block" },
           bgcolor: "primary.lighter",
           position: "fixed",
           top: 0,
@@ -55,15 +56,15 @@ const Layout = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: { xs: 2, sm: 3 },
           width: {
             xs: "100%",
             sm: desktopOpen ? `calc(100% - 240px)` : "100%",
           },
           ml: { sm: desktopOpen ? "240px" : 0 },
-          mt: 8,
+          mt: 6,
           transition: "all 0.3s ease-in-out",
-          height: "calc(100vh - 64px)",
+          height: "calc(100vh - 50px)",
           overflow: "auto",
         }}
       >

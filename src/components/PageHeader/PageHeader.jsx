@@ -15,7 +15,7 @@ const PageHeader = ({ title, actions, subtitle }) => {
             {title}
           </Typography>
           {subtitle && (
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" mt={-1}>
               {subtitle}
             </Typography>
           )}
